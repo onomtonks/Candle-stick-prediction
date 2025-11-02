@@ -25,7 +25,7 @@ from datetime import timedelta
 # Example: get 1-minute data for AAPL for the last 5 days
 data = yf.download("GLD", interval="1m", period="1d")
 
-data.tail(5)
+
 
 spark = SparkSession.builder.appName("LoadModel").getOrCreate()
 
@@ -58,8 +58,6 @@ last_1.rename(columns={'Datetime':'timestamp'}, inplace=True)
 
 spark_df = spark.createDataFrame(last_5)
 
-spark_df.show()
-
 spark_df = spark_df.drop("Typical Price_", "Price-Volume_","Cumulative PV_","Cumulative Volume_","VWAP_",'Typical Price',"Price-Volume","Cumulative PV","Cumulative Volume")
 
 windowSpec = Window.orderBy("timestamp")
@@ -89,12 +87,11 @@ for i in range(10):
 
 
 
-spark_df.show()
+
 
 spark_df = spark_df.filter(spark_df["vwap9"].isNotNull())
 spark_df = spark_df.drop('timestamp')
 
-spark_df.show()
 
 # Dictionary mapping old column names to new column names
 column_mapping = {
@@ -110,7 +107,7 @@ column_mapping = {
 for old_name, new_name in column_mapping.items():
     spark_df = spark_df.withColumnRenamed(old_name, new_name)
 
-spark_df.show()
+
 
 org_open = spark_df.select('open').first()[0]
 
