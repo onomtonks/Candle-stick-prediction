@@ -19,8 +19,6 @@ import time
 import pandas as pd
 from datetime import timedelta
 
-!apt-get update -y
-!apt-get install openjdk-11-jdk -y
 
 # Example: get 1-minute data for AAPL for the last 5 days
 data = yf.download("GLD", interval="1m", period="1d")
