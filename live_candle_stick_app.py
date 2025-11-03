@@ -66,7 +66,7 @@ while True:
 X = last_5[new_order].iloc[-1].values
 if len(X) != n_features:
     print(f"Warning: feature vector length ({len(X)}) does not match model ({n_features}). Skipping...")
-        time.sleep(60)
+    time.sleep(60)
         
     
     # Logistic prediction
