@@ -25,7 +25,7 @@ def fetch_data(ticker="GLD", interval="1m", period="1d"):
 
 def calculate_vwap(df):
     """Calculate VWAP for the DataFrame."""
-    df['Typical_Price'] = (df['High'] + df['Low'] + df['Close']) / 3
+    df['Typical_Price'] = (df['high'] + df['Low'] + df['Close']) / 3
     df['Price_Volume'] = df['Typical_Price'] * df['Volume']
     df['Cum_PV'] = df['Price_Volume'].cumsum()
     df['Cum_Volume'] = df['Volume'].cumsum()
