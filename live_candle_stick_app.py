@@ -39,6 +39,12 @@ while True:
     last_5.rename(columns={'Datetime':'timestamp'}, inplace=True)
     last_1 = data.tail(1).reset_index()
     last_1.rename(columns={'Datetime':'timestamp'}, inplace=True)
+    # If multi-level columns
+    last_5.columns = ['_'.join(col).strip() if isinstance(col, tuple) else col for col in last_5.columns]
+    
+    # Or replace spaces with underscores
+    last_5.columns = [col.replace(' ', '_') for col in last_5.columns]
+
     LAGS = 10
     for i in range(LAGS):
             last_5[f"open{i}"] = last_5["Open_GLD"].shift(-i)
@@ -55,7 +61,7 @@ while True:
                           "VWAP":'vwap'
                          }, inplace=True)
     last_5 = last_5[last_5["vwap9"].notnull()].copy()
-    last_5 = last_5.drop(columns=["timestamp",'Typical Price','Price-Volume','Cumulative PV','Cumulative Volume'])
+    last_5 = last_5.drop(columns=["timestamp",'Typical_Price','Price-Volume','Cumulative_PV','Cumulative_Volume'])
     new_order = ["open", "high", "low",'close','volume','vwap']
     for i in range(LAGS):
             new_order.extend([f"open{i}", f"high{i}", f"low{i}", f"close{i}", f"vwap{i}"])
