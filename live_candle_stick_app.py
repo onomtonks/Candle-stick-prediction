@@ -10,7 +10,7 @@ n_features = len(coef)
 FEATURES_PER_LAG = 5
 LAGS = n_features // FEATURES_PER_LAG  # Dynamically match model
 
-def fetch_data(ticker="GLD", interval="1m", period="1d"):
+def fetch_data(ticker="GLD", interval="1m", period="1d",auto_adjust=False):
     """Fetch minute-level data and flatten columns."""
     data = yf.download(ticker, interval=interval, period=period, progress=False)
     if data.empty:
