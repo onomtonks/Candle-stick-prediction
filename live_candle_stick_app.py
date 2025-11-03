@@ -13,7 +13,7 @@ LAGS = 10
 
 while True:
     print("Fetching latest data...")
-    ata = yf.download("GLD", interval="1m", period="1d")
+    data = yf.download("GLD", interval="1m", period="1d")
     if not data.empty:
     # Simplify column names for easier access
         data.columns = ['_'.join(col).strip() if isinstance(col, tuple) else col for col in data.columns.values]
