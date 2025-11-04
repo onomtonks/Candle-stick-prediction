@@ -25,29 +25,37 @@ def fetch_data(ticker="GLD", interval="1m", period="1d"):
 
 def calculate_vwap(df):
     """Calculate VWAP for the DataFrame."""
-    df['Typical_Price'] = (df['high'] + df['Low'] + df['Close']) / 3
-    df['Price_Volume'] = df['Typical_Price'] * df['Volume']
+    df['Typical_Price'] = (df['High_GLD'] + df['Low_GLD'] + df['Close_GLD']) / 3
+    df['Price_Volume'] = df['Typical_Price'] * df['Volume_GLD']
     df['Cum_PV'] = df['Price_Volume'].cumsum()
-    df['Cum_Volume'] = df['Volume'].cumsum()
+    df['Cum_Volume'] = df['Volume_GLD'].cumsum()
     df['VWAP'] = df['Cum_PV'] / df['Cum_Volume']
     return df
 
 def create_lag_features(df, LAGS):
     """Create lag features for OHLCV and VWAP."""
     df = df.copy()
-    for i in range(LAGS):
-        df[f"open{i}"] = df["Open"].shift(-i)
-        df[f"high{i}"] = df["High"].shift(-i)
-        df[f"low{i}"] = df["Low"].shift(-i)
-        df[f"close{i}"] = df["Close"].shift(-i)
-        df[f"vwap{i}"] = df["VWAP"].shift(-i)
-    df = df[df[f"vwap{LAGS-1}"].notnull()].copy()  # Keep only rows where all lags exist
+    for i in range(1,LAGS):
+        df[f"open{i-1}"] = df["Open_GLD"].shift(-i)
+        df[f"high{i-1}"] = df["High_GLD"].shift(-i)
+        df[f"low{i-1}"] = df["Low_GLD"].shift(-i)
+        df[f"close{i-1}"] = df["Close_GLD"].shift(-i)
+        df[f"vwap{i-1}"] = df["VWAP"].shift(-i)
+    df.rename(columns= {"Datetime": "timestamp",
+                      'Close_GLD':'close',
+                     "High_GLD":"high",
+                     "Low_GLD":"low",
+                     "Open_GLD":'open',
+                     'Volume_GLD':'volume',
+                      "VWAP":'vwap'
+                     }, inplace=True)
+    df = df[df[f"vwap{LAGS-2}"].notnull()].copy()  # Keep only rows where all lags exist
     return df
 
 while True:
     try:
         print("Fetching latest data...")
-        data = fetch_data("GLD")
+        data = fetch_data()
         if data.empty:
             print("Could not retrieve data. Retrying in 60 seconds...")
             time.sleep(60)
@@ -65,10 +73,11 @@ while True:
             continue
 
         # Feature vector
-        feature_cols = []
-        for i in range(LAGS):
-            feature_cols.extend([f"open{i}", f"high{i}", f"low{i}", f"close{i}", f"vwap{i}"])
-        X = last_rows[feature_cols].iloc[-1].values
+        new_order = ["open", "high", "low",'close','volume','vwap']
+        for i in range(LAGS-1):
+                new_order.extend([f"open{i}", f"high{i}", f"low{i}", f"close{i}", f"vwap{i}"])
+        last_rows = last_rows[new_order]
+        X = last_rows[new_order].iloc[-1].values
 
         if len(X) != n_features:
             print(f"Feature vector length mismatch ({len(X)}), expected {n_features}. Skipping...")
@@ -84,6 +93,19 @@ while True:
 
         # Latest close for verification
         latest_close = last_rows["close0"].iloc[-1]
+        time.sleep(5 * 60)
+
+# Get latest close price
+        new_data = fetch_data()
+        if new_data.empty:
+            print("Unable to fetch new data. Skipping verification...")
+    
+
+        if isinstance(new_data.columns, pd.MultiIndex):
+            new_data.columns = [col[0] if isinstance(col, tuple) else col for col in new_data.columns]
+
+        new_data.reset_index(inplace=True)
+        latest_close = new_data["Close_GLD"].iloc[-1]
         if latest_close > org_open and pred == 1:
             print("✅ Correct Prediction (BUY)")
         elif latest_close < org_open and pred == 0:
@@ -95,7 +117,7 @@ while True:
         print("Latest Close:", latest_close)
         print("------------------------------------\n")
 
-        time.sleep(60)  # Wait before next update
+        time.sleep(10*60)  # Wait before next update
 
     except Exception as e:
         print(f"Error occurred: {e}. Retrying in 60 seconds...")
