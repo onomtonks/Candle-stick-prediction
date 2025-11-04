@@ -12,10 +12,10 @@ LAGS = n_features // FEATURES_PER_LAG  # Dynamically match model
 
 def fetch_data(ticker="GLD", interval="1m", period="1d"):
     """Fetch minute-level data and flatten columns."""
-    data = yf.download(ticker, interval=interval, period=period, auto_adjust=False)
+    data = yf.download(ticker, interval=interval, period=period, auto_adjust=False,group_by="ticker")
     if data.empty:
         return pd.DataFrame()  # Return empty DataFrame if download fails
-
+    data.columns = data.columns.droplevel(0)
     # Flatten MultiIndex columns if present
     data.columns = ['_'.join(col).strip() if isinstance(col, tuple) else col for col in data.columns]
     # Replace spaces with underscores
@@ -25,10 +25,10 @@ def fetch_data(ticker="GLD", interval="1m", period="1d"):
 
 def calculate_vwap(df):
     """Calculate VWAP for the DataFrame."""
-    df['Typical_Price'] = (df['High_GLD'] + df['Low_GLD'] + df['Close_GLD']) / 3
-    df['Price_Volume'] = df['Typical_Price'] * df['Volume_GLD']
+    df['Typical_Price'] = (df['High'] + df['Low'] + df['Close']) / 3
+    df['Price_Volume'] = df['Typical_Price'] * df['Volume']
     df['Cum_PV'] = df['Price_Volume'].cumsum()
-    df['Cum_Volume'] = df['Volume_GLD'].cumsum()
+    df['Cum_Volume'] = df['Volume'].cumsum()
     df['VWAP'] = df['Cum_PV'] / df['Cum_Volume']
     return df
 
@@ -36,17 +36,17 @@ def create_lag_features(df, LAGS):
     """Create lag features for OHLCV and VWAP."""
     df = df.copy()
     for i in range(1,LAGS):
-        df[f"open{i-1}"] = df["Open_GLD"].shift(-i)
-        df[f"high{i-1}"] = df["High_GLD"].shift(-i)
-        df[f"low{i-1}"] = df["Low_GLD"].shift(-i)
-        df[f"close{i-1}"] = df["Close_GLD"].shift(-i)
+        df[f"open{i-1}"] = df["Open"].shift(-i)
+        df[f"high{i-1}"] = df["High"].shift(-i)
+        df[f"low{i-1}"] = df["Low"].shift(-i)
+        df[f"close{i-1}"] = df["Close"].shift(-i)
         df[f"vwap{i-1}"] = df["VWAP"].shift(-i)
     df.rename(columns= {"Datetime": "timestamp",
-                      'Close_GLD':'close',
-                     "High_GLD":"high",
-                     "Low_GLD":"low",
-                     "Open_GLD":'open',
-                     'Volume_GLD':'volume',
+                      'Close':'close',
+                     "High":"high",
+                     "Low":"low",
+                     "Open":'open',
+                     'Volume':'volume',
                       "VWAP":'vwap'
                      }, inplace=True)
     df = df[df[f"vwap{LAGS-2}"].notnull()].copy()  # Keep only rows where all lags exist
@@ -105,7 +105,7 @@ while True:
             new_data.columns = [col[0] if isinstance(col, tuple) else col for col in new_data.columns]
 
         new_data.reset_index(inplace=True)
-        latest_close = new_data["Close_GLD"].iloc[-1]
+        latest_close = new_data["Close"].iloc[-1]
         if latest_close > org_open and pred == 1:
             print("✅ Correct Prediction (BUY)")
         elif latest_close < org_open and pred == 0:
